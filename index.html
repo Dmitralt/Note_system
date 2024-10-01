@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note System</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 40px;
+            background-color: #f4f4f9;
+        }
+
+        .add-card {
+            width: 160px;
+            padding: 20px;
+            height: 230px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #4caf50;
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            font-size: 148px;
+            font-weight: bold;
+            color: white;
+            transition: 0.2s;
+        }
+
+        .add-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .note-card {
+            width: 160px;
+            height: 230px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 12px;
+            box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: 0.2s;
+            cursor: pointer;
+        }
+
+        .note-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .note-card p {
+            margin: 0;
+            word-wrap: break-word;
+            flex-grow: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .note-card .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: black;
+            font-size: 20px;
+            line-height: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .note-card .close-btn:hover {
+            color: #666;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .modal-content textarea {
+            width: 220px;
+            height: 220px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 14px;
+            resize: none;
+        }
+
+        .modal-content .char-count {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .modal-content button {
+            padding: 10px 20px;
+            background-color: #4caf50;
+            margin-bottom: 10px;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+
+        .modal-content button:hover {
+            background-color: greenyellow;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="addCard" class="add-card">✜</div>
+
+    <div id="modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <button id="saveNote">Save</button>
+            <textarea id="noteText" placeholder="text note"></textarea>
+            <div class="char-count" id="symbolCount"></div>
+
+        </div>
+    </div>
+
+    <script>
+
+        let notes = JSON.parse(localStorage.getItem('notes')) || [];
+
+        let indexEdit = null;
+        const maxNotes = 10;
+
+        const maxSymbols = 200;
+        const symbolCount = document.getElementById('symbolCount');
+        symbolCount.text = `0 / ${maxSymbols}`;
+
+        const addCard = document.getElementById('addCard');
+
+        const modal = document.getElementById('modal');
+        const saveButton = document.getElementById('saveNote');
+        const noteText = document.getElementById('noteText');
+
+        noteText.addEventListener('input', () => {
+            const lenfthOfText = noteText.value.length;
+            symbolCount.textContent = `${lenfthOfText} / ${maxSymbols}`;
+
+
+            if (lenfthOfText > maxSymbols) {
+                noteText.value = noteText.value.substring(0, maxSymbols);
+                symbolCount.textContent = `${maxSymbols} / ${maxSymbols}`;
+            }
+        });
+
+        function renderNotes() {
+            document.querySelectorAll('.note-card').forEach(note => note.remove());
+            notes.forEach((note, index) => createNoteCard(note, index));
+
+            if (notes.length >= maxNotes) {
+                addCard.style.display = 'none';
+            } else {
+                addCard.style.display = 'flex';
+            }
+        }
+
+        function createNoteCard(text, index) {
+            const noteCard = document.createElement('div');
+            noteCard.classList.add('note-card');
+            noteCard.innerHTML = `
+                <p>${text}</p>
+                <button class="close-btn">&times;</button>
+            `;
+
+            noteCard.querySelector('.close-btn').addEventListener('click', (event) => {
+                event.stopPropagation();
+                notes.splice(index, 1);
+                localStorage.setItem('notes', JSON.stringify(notes));
+                renderNotes();
+            });
+
+            noteCard.addEventListener('click', () => {
+                indexEdit = index;
+                noteText.value = notes[index];
+                symbolCount.textContent = `${notes[index].length} / ${maxSymbols}`;
+                modal.style.display = 'flex';
+            });
+
+            document.body.insertBefore(noteCard, addCard);
+        }
+
+        addCard.addEventListener('click', () => {
+            symbolCount.textContent = `0 / ${maxSymbols}`;
+            modal.style.display = 'flex';
+            noteText.value = '';
+            indexEdit = null;
+
+
+        });
+
+        saveButton.addEventListener('click', () => {
+            const message = noteText.value.trim();
+            if (message !== '') {
+                if (indexEdit !== null) {
+                    notes[indexEdit] = message;
+                } else if (notes.length < maxNotes) {
+                    notes.push(message);
+                }
+                localStorage.setItem('notes', JSON.stringify(notes));
+                renderNotes();
+                modal.style.display = 'none';
+                noteText.value = '';
+            }
+        });
+        renderNotes();
+    </script>
+
+</body>
+
+</html>
